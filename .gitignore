@@ -1,4 +1,5 @@
-node_modules/
-.percy/
 *.log
+*.tgz
 .DS_Store
+.percy/
+node_modules/

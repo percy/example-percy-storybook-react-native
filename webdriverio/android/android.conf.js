@@ -1,7 +1,11 @@
 // Mirrors the upstream example-percy-appium-js wdio config shape.
 // Customer adapts the BS credentials, device, and `app` cap to their setup.
 
-exports.config = {
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export const config = {
   user: process.env.BROWSERSTACK_USERNAME || 'YOUR_BS_USERNAME',
   key: process.env.BROWSERSTACK_ACCESS_KEY || 'YOUR_BS_ACCESS_KEY',
 
@@ -11,7 +15,7 @@ exports.config = {
   path: '/wd/hub',
 
   updateJob: false,
-  specs: ['./android/specs/storybook.spec.js'],
+  specs: [path.join(__dirname, 'specs/storybook.spec.js')],
   exclude: [],
 
   capabilities: [
@@ -48,3 +52,4 @@ exports.config = {
     timeout: 600000,
   },
 };
+
