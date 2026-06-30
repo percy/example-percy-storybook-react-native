@@ -18,6 +18,7 @@
 
 import percyStorybookSnapshot, {
   discoverStories,
+  runSession,
 } from '@percy/storybook-react-native';
 
 describe('Percy Storybook RN — App Automate smoke', () => {
@@ -44,9 +45,16 @@ describe('Percy Storybook RN — App Automate smoke', () => {
       appPackage: process.env.PERCY_APP_PACKAGE,
     };
 
-    for (const story of stories) {
-      // eslint-disable-next-line no-undef
-      await percyStorybookSnapshot(driver, story, navOpts);
-    }
+    // `runSession(driver, fn)` wraps the iteration in try/finally and
+    // guarantees `driver.deleteSession()` runs even if a snapshot throws —
+    // so a failed run never leaks a dangling BrowserStack session (which
+    // would keep burning App Automate quota until it times out).
+    // eslint-disable-next-line no-undef
+    await runSession(driver, async () => {
+      for (const story of stories) {
+        // eslint-disable-next-line no-undef
+        await percyStorybookSnapshot(driver, story, navOpts);
+      }
+    });
   });
 });
