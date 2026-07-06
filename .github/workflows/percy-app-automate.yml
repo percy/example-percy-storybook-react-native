@@ -10,39 +10,67 @@ jobs:
   percy-storybook-rn:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Secrets are surfaced as env so the "Check credentials" step can decide
+      # whether the on-device run is possible. On forks / PRs without secrets,
+      # the cloud steps below are skipped and the job still passes as an
+      # install + syntax smoke test.
+      BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+      BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+      PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
+      # No npm cache here: there is no committed lockfile (the only package
+      # lives in webdriverio/ and its exact tree depends on the published SDK
+      # version), so `cache: npm` would fail looking for a root lockfile.
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install root deps
-        run: npm ci
 
       - name: Install webdriverio example deps
         working-directory: webdriverio
         run: npm install
 
+      - name: Syntax smoke check
+        working-directory: webdriverio
+        run: |
+          node --check android/android.conf.js
+          node --check android/specs/storybook.spec.js
+          node --check ../scripts/upload-apk.js
+
+      - name: Check credentials
+        id: creds
+        run: |
+          if [ -n "$BROWSERSTACK_USERNAME" ] && [ -n "$PERCY_TOKEN" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::BrowserStack/Percy secrets not set — skipping the on-device run (expected on forks and PRs without secrets). The job still verifies that deps install and the scripts parse."
+          fi
+
+      # The on-device steps below require a customer-supplied Storybook .apk in
+      # resources/ AND BrowserStack + Percy secrets. They run only when secrets
+      # are present; a maintainer wiring this up must also provide the .apk.
       - name: Upload Storybook host APK to BrowserStack
-        run: node scripts/upload-apk.js | tee upload.log
+        if: steps.creds.outputs.have == 'true'
+        working-directory: webdriverio
+        # NODE_PATH points module resolution at webdriverio/node_modules so the
+        # root-level scripts/upload-apk.js can import @percy/storybook-react-native.
+        run: NODE_PATH="$PWD/node_modules" node ../scripts/upload-apk.js | tee ../upload.log
         env:
-          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          PERCY_APP_PATH: ./resources/PercyStorybookExample.apk
+          PERCY_APP_PATH: ../resources/PercyStorybookExample.apk
 
       - name: Extract bs:// URL
+        if: steps.creds.outputs.have == 'true'
         id: app
         run: |
           url=$(grep -oE 'bs://[A-Za-z0-9._-]+' upload.log | tail -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Run Percy + WebdriverIO
+        if: steps.creds.outputs.have == 'true'
         working-directory: webdriverio
         env:
-          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
-          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
-          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
           PERCY_APP_URL: ${{ steps.app.outputs.url }}
         run: npx percy app:exec -- npm run android
