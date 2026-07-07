@@ -132,7 +132,7 @@ You'll see logs like:
 
 Open the Percy URL — one snapshot per story, captured on a real BrowserStack device.
 
-> The spec iterates stories inside `runSession(driver, fn)` — the SDK helper that guarantees `driver.deleteSession()` runs even if a snapshot throws, so a failed run never leaks a dangling BrowserStack session. See [`webdriverio/README.md`](./webdriverio/README.md) for the per-step walkthrough.
+> The spec runs under the WDIO testrunner, which owns the session lifecycle — it always calls `deleteSession` after the spec, pass or fail. (The SDK's `runSession(driver, fn)` helper serves the same purpose for standalone `remote()` scripts; don't combine it with the testrunner, which would double-delete the session.) See [`webdriverio/README.md`](./webdriverio/README.md) for the per-step walkthrough.
 
 ### Step 8 — Make a visual change & re-run
 

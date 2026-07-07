@@ -63,7 +63,7 @@ See the root README's **Navigation strategy** section for how to register the UR
 npx percy app:exec -- npm run android
 ```
 
-The spec ([`android/specs/storybook.spec.js`](./android/specs/storybook.spec.js)) discovers every story, then iterates them inside `runSession(driver, fn)` — a helper that guarantees `driver.deleteSession()` runs even on failure, so a crashed run never leaks a dangling BrowserStack session. You'll see one `Snapshot taken: …` line per story and, at the end, a Percy build URL.
+The spec ([`android/specs/storybook.spec.js`](./android/specs/storybook.spec.js)) discovers every story and captures one snapshot per story. Session cleanup is handled by the WDIO testrunner itself (it always calls `deleteSession` after the spec, pass or fail — the SDK's `runSession` helper is only for standalone `remote()` scripts). You'll see one `Snapshot taken: …` line per story and, at the end, a Percy build URL.
 
 ### Step 7 — Make a visual change & re-run
 
