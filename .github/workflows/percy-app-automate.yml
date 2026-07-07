@@ -54,12 +54,14 @@ jobs:
       # are present; a maintainer wiring this up must also provide the .apk.
       - name: Upload Storybook host APK to BrowserStack
         if: steps.creds.outputs.have == 'true'
-        working-directory: webdriverio
-        # NODE_PATH points module resolution at webdriverio/node_modules so the
-        # root-level scripts/upload-apk.js can import @percy/storybook-react-native.
-        run: NODE_PATH="$PWD/node_modules" node ../scripts/upload-apk.js | tee ../upload.log
+        # ESM import resolution ignores NODE_PATH, so a root-level
+        # node_modules symlink is what lets scripts/upload-apk.js resolve
+        # @percy/storybook-react-native out of webdriverio/node_modules.
+        run: |
+          ln -sfn webdriverio/node_modules node_modules
+          node scripts/upload-apk.js | tee upload.log
         env:
-          PERCY_APP_PATH: ../resources/PercyStorybookExample.apk
+          PERCY_APP_PATH: ./resources/PercyStorybookExample.apk
 
       - name: Extract bs:// URL
         if: steps.creds.outputs.have == 'true'

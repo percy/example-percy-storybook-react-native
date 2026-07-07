@@ -18,7 +18,6 @@
 
 import percyStorybookSnapshot, {
   discoverStories,
-  runSession,
 } from '@percy/storybook-react-native';
 
 describe('Percy Storybook RN — App Automate smoke', () => {
@@ -45,16 +44,14 @@ describe('Percy Storybook RN — App Automate smoke', () => {
       appPackage: process.env.PERCY_APP_PACKAGE,
     };
 
-    // `runSession(driver, fn)` wraps the iteration in try/finally and
-    // guarantees `driver.deleteSession()` runs even if a snapshot throws —
-    // so a failed run never leaks a dangling BrowserStack session (which
-    // would keep burning App Automate quota until it times out).
-    // eslint-disable-next-line no-undef
-    await runSession(driver, async () => {
-      for (const story of stories) {
-        // eslint-disable-next-line no-undef
-        await percyStorybookSnapshot(driver, story, navOpts);
-      }
-    });
+    // The WDIO testrunner owns the session lifecycle — it always calls
+    // deleteSession after the spec, pass or fail, so no manual cleanup is
+    // needed here. (The SDK's `runSession(driver, fn)` helper is for
+    // standalone `remote()` scripts, where nothing else deletes the session;
+    // under the testrunner it would double-delete and fail the run.)
+    for (const story of stories) {
+      // eslint-disable-next-line no-undef
+      await percyStorybookSnapshot(driver, story, navOpts);
+    }
   });
 });
