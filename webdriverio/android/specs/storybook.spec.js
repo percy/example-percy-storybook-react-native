@@ -44,6 +44,11 @@ describe('Percy Storybook RN — App Automate smoke', () => {
       appPackage: process.env.PERCY_APP_PACKAGE,
     };
 
+    // The WDIO testrunner owns the session lifecycle — it always calls
+    // deleteSession after the spec, pass or fail, so no manual cleanup is
+    // needed here. (The SDK's `runSession(driver, fn)` helper is for
+    // standalone `remote()` scripts, where nothing else deletes the session;
+    // under the testrunner it would double-delete and fail the run.)
     for (const story of stories) {
       // eslint-disable-next-line no-undef
       await percyStorybookSnapshot(driver, story, navOpts);

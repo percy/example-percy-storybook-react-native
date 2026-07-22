@@ -1,8 +1,8 @@
 # example-percy-storybook-react-native
 
-Example repo demonstrating `@percy/storybook-react-native`'s **library mode** running against **BrowserStack App Automate**. Mirrors the [`percy/example-percy-appium-js`](https://github.com/percy/example-percy-appium-js) shape — same tutorial flow, applied to React Native + Storybook component snapshots.
+Example repo demonstrating `@percy/storybook-react-native`'s **library mode** running against **BrowserStack App Automate** — one Percy snapshot per Storybook story, captured on a real BrowserStack Android device. It mirrors the [`percy/example-percy-appium-js`](https://github.com/percy/example-percy-appium-js) shape — same tutorial flow, applied to React Native + Storybook component snapshots.
 
-> **PoC validated 2026-05-09.** First end-to-end run captured 7/7 stories from a real Storybook RN v10.3.2 fixture on a BrowserStack Pixel 8 (Android 14.0) — see [Percy build #13 in the upstream PoC project](https://percy.io/9560f98d/app/test-app-ak-af154739/builds/49582001) for proof.
+➡ **Step-by-step tutorial:** [`webdriverio/README.md`](./webdriverio/README.md). See the [Percy SDK Feature Matrix](https://docs.percy.io/docs/sdk-feature-matrix) for cross-SDK coverage.
 
 ## What this proves
 
@@ -19,7 +19,8 @@ The integration uses only existing, published Percy/BrowserStack tooling: [`@per
 
 | | Version | Why |
 |---|---|---|
-| Node | **≥ 22** | `@storybook/react-native`'s metro plugin uses `require()` on the ESM-only `storybook` package. Only Node 22's `require(esm)` interop allows it. |
+| Node (run this example) | **≥ 20.19** | The SDK's `engines` floor. Pinned in [`.nvmrc`](./.nvmrc). |
+| Node (build the `.apk`) | **≥ 22** | Only needed in **your RN project** when building the Storybook `.apk`: `@storybook/react-native`'s metro plugin `require()`s the ESM-only `storybook` package, which needs Node 22's `require(esm)` interop. |
 | JDK | 17 | Android Gradle Plugin requirement |
 | Android SDK | platforms;android-34, build-tools;34.0.0 | RN 0.81 default |
 | BrowserStack account | Any plan with App Automate quota | The cloud-device runtime |
@@ -28,7 +29,9 @@ The integration uses only existing, published Percy/BrowserStack tooling: [`@per
 ## Repo layout
 
 ```
+.percy.yml                    global Percy config (App Automate)
 webdriverio/
+  README.md                   the step-by-step tutorial — start here
   android/
     android.conf.js           wdio config (BS caps, mocha framework)
     specs/
@@ -39,6 +42,7 @@ scripts/
   upload-apk.js               convenience wrapper around provisionApp
 .github/workflows/
   percy-app-automate.yml      Linux CI workflow (Android only in MVP)
+  Semgrep.yml                 static-analysis scan (matches sibling examples)
 ```
 
 ## Tutorial
@@ -62,7 +66,7 @@ export BROWSERSTACK_ACCESS_KEY="<your access key>"
 
 ### Step 3 — Build a Storybook `.apk`
 
-Build a Storybook-enabled **release** `.apk` — distinct from your production app's `.apk`. See the [`@percy/storybook-react-native` SDK's STORYBOOK_HOST_APP.md](https://github.com/percy/percy-react-native-support/blob/main/packages/storybook-react-native/STORYBOOK_HOST_APP.md) for the recommended Expo / bare RN build setup.
+Build a Storybook-enabled **release** `.apk` — distinct from your production app's `.apk`. See the [`@percy/storybook-react-native` SDK's STORYBOOK_HOST_APP.md](https://github.com/percy/percy-react-native-app/blob/main/packages/storybook-react-native/STORYBOOK_HOST_APP.md) for the recommended Expo / bare RN build setup.
 
 ```bash
 cd your-rn-project
@@ -128,13 +132,15 @@ You'll see logs like:
 
 Open the Percy URL — one snapshot per story, captured on a real BrowserStack device.
 
+> The spec runs under the WDIO testrunner, which owns the session lifecycle — it always calls `deleteSession` after the spec, pass or fail. (The SDK's `runSession(driver, fn)` helper serves the same purpose for standalone `remote()` scripts; don't combine it with the testrunner, which would double-delete the session.) See [`webdriverio/README.md`](./webdriverio/README.md) for the per-step walkthrough.
+
 ### Step 8 — Make a visual change & re-run
 
 Edit a component, rebuild the `.apk`, re-upload, re-run. Percy will flag the diff on the next build.
 
 ## Navigation strategy
 
-This example uses **deep-link** navigation (`navigationStrategy: 'deeplink'`) — the spike-validated path on Storybook RN v10.3.2. Your app needs to register a URL scheme. For Expo, one line in `app.json`:
+This example uses **deep-link** navigation (`navigationStrategy: 'deeplink'`) — the recommended path on Storybook RN v10.x. Your app needs to register a URL scheme. For Expo, one line in `app.json`:
 
 ```json
 { "expo": { "scheme": "myapp" } }
@@ -153,7 +159,7 @@ For bare RN, add an `<intent-filter>` to `AndroidManifest.xml`:
 
 Then in `webdriverio/android/specs/storybook.spec.js`, the existing `percyStorybookSnapshot` call already passes `navigationStrategy: 'deeplink'` along with the scheme/package opts.
 
-UI-tap navigation (`navigationStrategy: 'ui-tap'`) is also exposed but is currently under calibration for Storybook RN v10.3.2's bottom-sheet navigator.
+UI-tap navigation (`navigationStrategy: 'ui-tap'`) is the SDK's default and works with Storybook RN **v9.x**. On v10.x the navigator drawer renders its story tree through a virtualized list that Appium can't reach, so use deep-link there (as this example does).
 
 ## Customer adaptation
 
@@ -167,7 +173,8 @@ A real customer would:
 
 ## References
 
-- [`percy/percy-react-native-support`](https://github.com/percy/percy-react-native-support) — the SDK
+- [`percy/percy-react-native-app`](https://github.com/percy/percy-react-native-app) — the SDK
+- [Percy SDK Feature Matrix](https://docs.percy.io/docs/sdk-feature-matrix) — cross-SDK feature coverage
 - [`percy/example-percy-appium-js`](https://github.com/percy/example-percy-appium-js) — the upstream pattern this repo mirrors
 - [`@storybook/react-native`](https://github.com/storybookjs/react-native) — Storybook for React Native
 - [BrowserStack App Automate](https://www.browserstack.com/app-automate)

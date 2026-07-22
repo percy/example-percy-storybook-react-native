@@ -1,0 +1,14 @@
+# Global Percy config for this App Automate example.
+#
+# Snapshots are taken on-device through @percy/appium-app, so the usual web
+# snapshot keys (widths, percy-css, min-height) do NOT apply here — they're
+# rendered from a serialized DOM, which App Percy never produces.
+#
+# Per-snapshot options passed to percyStorybookSnapshot(driver, story, { ... })
+# in webdriverio/android/specs/storybook.spec.js override anything set here.
+version: 2
+
+percy:
+  # Upload each snapshot as it's taken rather than batching at the end of the
+  # run. Keeps partial results visible if a long story loop is interrupted.
+  defer_uploads: false
