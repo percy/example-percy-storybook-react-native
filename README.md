@@ -140,7 +140,7 @@ Edit a component, rebuild the `.apk`, re-upload, re-run. Percy will flag the dif
 
 ## Navigation strategy
 
-This example uses **deep-link** navigation (`navigationStrategy: 'deeplink'`) — the spike-validated path on Storybook RN v10.3.2. Your app needs to register a URL scheme. For Expo, one line in `app.json`:
+This example uses **deep-link** navigation (`navigationStrategy: 'deeplink'`) — the recommended path on Storybook RN v10.x. Your app needs to register a URL scheme. For Expo, one line in `app.json`:
 
 ```json
 { "expo": { "scheme": "myapp" } }
@@ -159,7 +159,7 @@ For bare RN, add an `<intent-filter>` to `AndroidManifest.xml`:
 
 Then in `webdriverio/android/specs/storybook.spec.js`, the existing `percyStorybookSnapshot` call already passes `navigationStrategy: 'deeplink'` along with the scheme/package opts.
 
-UI-tap navigation (`navigationStrategy: 'ui-tap'`) is also exposed but is currently under calibration for Storybook RN v10.3.2's bottom-sheet navigator.
+UI-tap navigation (`navigationStrategy: 'ui-tap'`) is the SDK's default and works with Storybook RN **v9.x**. On v10.x the navigator drawer renders its story tree through a virtualized list that Appium can't reach, so use deep-link there (as this example does).
 
 ## Customer adaptation
 
